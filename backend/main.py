@@ -51,6 +51,10 @@ class VideoInfoResponse(BaseModel):
     webpage_url: str
     extractor: str
 
+@app.get("/health")
+def health_check():
+    return {"status": "ok", "service": "video-downloader-api"}
+
 @app.get("/")
 def root():
     return {"message": "Video Downloader API", "version": "1.0.0"}
