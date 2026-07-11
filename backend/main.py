@@ -27,12 +27,14 @@ download_service = DownloadService(DOWNLOAD_DIR)
 
 class VideoInfoRequest(BaseModel):
     url: str
+    proxy: Optional[str] = None
 
 class DownloadRequest(BaseModel):
     url: str
     format_id: Optional[str] = None
     quality: Optional[str] = "best"
     filename: Optional[str] = None
+    proxy: Optional[str] = None
 
 class VideoFormat(BaseModel):
     format_id: str
@@ -62,7 +64,7 @@ def root():
 @app.post("/api/info", response_model=VideoInfoResponse)
 def get_video_info(request: VideoInfoRequest):
     try:
-        info = download_service.get_info(request.url)
+        info = download_service.get_info(request.url, proxy=request.proxy)
         formats = []
         for f in info.get("formats", []):
             formats.append(VideoFormat(
@@ -95,6 +97,7 @@ def start_download(request: DownloadRequest, background_tasks: BackgroundTasks):
             format_id=request.format_id,
             quality=request.quality,
             filename=request.filename,
+            proxy=request.proxy,
         )
         background_tasks.add_task(download_service.download, task)
         return {"task_id": task_id, "status": "started", "url": request.url}
