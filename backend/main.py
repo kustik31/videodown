@@ -1,10 +1,9 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Query
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, StreamingResponse
-from pydantic import BaseModel, HttpUrl
+from fastapi.responses import FileResponse
+from pydantic import BaseModel
 import os
 import uuid
-import json
 from typing import Optional, List, Dict
 from datetime import datetime
 
@@ -88,7 +87,7 @@ def get_video_info(request: VideoInfoRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/api/download")
-def start_download(request: DownloadRequest, background_tasks: BackgroundTasks):
+def start_download(request: DownloadRequest):
     task_id = str(uuid.uuid4())
     try:
         task = download_service.create_task(
@@ -99,10 +98,40 @@ def start_download(request: DownloadRequest, background_tasks: BackgroundTasks):
             filename=request.filename,
             proxy=request.proxy,
         )
-        background_tasks.add_task(download_service.download, task)
+        download_service.download(task)
         return {"task_id": task_id, "status": "started", "url": request.url}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/download/{task_id}/pause")
+def pause_download(task_id: str):
+    task = download_service.get_task(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    success = download_service.pause_task(task_id)
+    if not success:
+        raise HTTPException(status_code=400, detail="Cannot pause task in current state")
+    return {"task_id": task_id, "status": "paused"}
+
+@app.post("/api/download/{task_id}/resume")
+def resume_download(task_id: str):
+    task = download_service.get_task(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    success = download_service.resume_task(task_id)
+    if not success:
+        raise HTTPException(status_code=400, detail="Cannot resume task in current state")
+    return {"task_id": task_id, "status": "resumed"}
+
+@app.post("/api/download/{task_id}/restart")
+def restart_download(task_id: str):
+    task = download_service.get_task(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    success = download_service.restart_task(task_id)
+    if not success:
+        raise HTTPException(status_code=400, detail="Cannot restart task")
+    return {"task_id": task_id, "status": "restarted"}
 
 @app.get("/api/download/{task_id}")
 def get_download_status(task_id: str):
