@@ -33,25 +33,37 @@
 - Node.js 18+
 - FFmpeg (опционально, для лучшей совместимости)
 
-### Backend
+### Локальный запуск (без Docker)
 
+**Backend:**
 ```bash
 cd backend
 pip install -r requirements.txt
 python main.py
 ```
+Backend: `http://localhost:8000`
 
-Backend будет доступен на `http://localhost:8000`
-
-### Frontend
-
+**Frontend:**
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
+Frontend: `http://localhost:5173`
 
-Frontend будет доступен на `http://localhost:5173`
+**Скрипт для запуска обоих:**
+- Windows: `start.bat`
+- Linux/Mac: `start.sh`
+
+### Docker (рекомендуется)
+
+```bash
+# Запуск всего приложения
+docker-compose up --build
+
+# Backend: http://localhost:8000
+# Frontend: http://localhost:5173
+```
 
 ### Сборка production
 
@@ -64,6 +76,8 @@ npm run build
 
 ## API Endpoints
 
+- `GET /health` — проверка работоспособности
+- `GET /` — информация об API
 - `POST /api/info` — получить информацию о видео
 - `POST /api/download` — начать загрузку
 - `GET /api/download/{task_id}` — статус загрузки
@@ -71,12 +85,46 @@ npm run build
 - `GET /api/download/{task_id}/file` — скачать файл
 - `DELETE /api/download/{task_id}` — удалить загрузку
 
-## GitHub + Cloudflare
+## CI/CD
 
-Для деплоя на Cloudflare Pages:
+В репозитории настроен GitHub Actions workflow (`.github/workflows/ci.yml`) для автоматической сборки frontend при каждом push в `main`.
+
+## Деплой
+
+### Cloudflare Pages (frontend only)
 1. Соберите frontend: `npm run build`
 2. Загрузите содержимое `frontend/dist/` на Cloudflare Pages
-3. Для backend можно использовать Cloudflare Workers с Python (экспериментально) или другой хостинг
+
+### Docker Compose (полный стек)
+```bash
+docker-compose up -d
+```
+
+## Структура проекта
+
+```
+videodown/
+├── backend/
+│   ├── main.py              # FastAPI приложение
+│   ├── download_service.py  # Сервис загрузки (yt-dlp)
+│   ├── requirements.txt     # Python зависимости
+│   └── Dockerfile           # Docker образ backend
+├── frontend/
+│   ├── src/
+│   │   ├── App.tsx          # Главный компонент
+│   │   ├── components/
+│   │   │   ├── VideoDownloader.tsx  # Панель загрузки
+│   │   │   └── DownloadList.tsx     # Список загрузок
+│   │   └── index.css        # Стили Tailwind
+│   ├── Dockerfile           # Docker образ frontend (nginx)
+│   ├── nginx.conf           # Конфиг nginx
+│   └── package.json         # Node.js зависимости
+├── docker-compose.yml       # Docker Compose конфиг
+├── .github/workflows/ci.yml # GitHub Actions CI
+├── start.bat                # Скрипт запуска (Windows)
+├── start.sh                 # Скрипт запуска (Linux/Mac)
+└── README.md                # Этот файл
+```
 
 ## Лицензия
 
