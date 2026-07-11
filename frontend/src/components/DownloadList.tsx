@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Trash2, Download, RefreshCw, Loader2, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Trash2, Download, RefreshCw, Loader2, CheckCircle, XCircle, Clock, Pause, Play, RotateCcw } from 'lucide-react';
 
 interface DownloadTask {
   task_id: string;
@@ -43,6 +43,33 @@ export default function DownloadList() {
     }
   };
 
+  const pauseTask = async (taskId: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/download/${taskId}/pause`, { method: 'POST' });
+      if (res.ok) fetchTasks();
+    } catch (e) {
+      console.error('Failed to pause task:', e);
+    }
+  };
+
+  const resumeTask = async (taskId: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/download/${taskId}/resume`, { method: 'POST' });
+      if (res.ok) fetchTasks();
+    } catch (e) {
+      console.error('Failed to resume task:', e);
+    }
+  };
+
+  const restartTask = async (taskId: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/download/${taskId}/restart`, { method: 'POST' });
+      if (res.ok) fetchTasks();
+    } catch (e) {
+      console.error('Failed to restart task:', e);
+    }
+  };
+
   const downloadFile = (taskId: string, filename: string) => {
     window.open(`${API_BASE}/download/${taskId}/file`, '_blank');
   };
@@ -57,6 +84,7 @@ export default function DownloadList() {
     switch (status) {
       case 'pending': return <Clock className="w-4 h-4 text-yellow-400" />;
       case 'downloading': return <Loader2 className="w-4 h-4 text-cyan-400 animate-spin" />;
+      case 'paused': return <Pause className="w-4 h-4 text-amber-400" />;
       case 'completed': return <CheckCircle className="w-4 h-4 text-emerald-400" />;
       case 'error': return <XCircle className="w-4 h-4 text-red-400" />;
       default: return <Clock className="w-4 h-4 text-slate-400" />;
@@ -67,6 +95,7 @@ export default function DownloadList() {
     switch (status) {
       case 'pending': return 'В очереди';
       case 'downloading': return 'Загрузка...';
+      case 'paused': return 'На паузе';
       case 'completed': return 'Готово';
       case 'error': return 'Ошибка';
       default: return status;
@@ -77,9 +106,19 @@ export default function DownloadList() {
     switch (status) {
       case 'pending': return 'text-yellow-400';
       case 'downloading': return 'text-cyan-400';
+      case 'paused': return 'text-amber-400';
       case 'completed': return 'text-emerald-400';
       case 'error': return 'text-red-400';
       default: return 'text-slate-400';
+    }
+  };
+
+  const progressColor = (status: string) => {
+    switch (status) {
+      case 'error': return 'bg-red-500';
+      case 'completed': return 'bg-emerald-500';
+      case 'paused': return 'bg-amber-500';
+      default: return 'bg-gradient-to-r from-cyan-500 to-blue-500';
     }
   };
 
@@ -133,6 +172,37 @@ export default function DownloadList() {
                 <p className="text-slate-500 text-xs truncate">{task.url}</p>
               </div>
               <div className="flex items-center gap-1">
+                {/* Pause button */}
+                {(task.status === 'downloading' || task.status === 'pending') && (
+                  <button
+                    onClick={() => pauseTask(task.task_id)}
+                    className="p-2 rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-colors"
+                    title="Поставить на паузу"
+                  >
+                    <Pause className="w-4 h-4" />
+                  </button>
+                )}
+                {/* Resume button */}
+                {task.status === 'paused' && (
+                  <button
+                    onClick={() => resumeTask(task.task_id)}
+                    className="p-2 rounded-lg bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 transition-colors"
+                    title="Продолжить"
+                  >
+                    <Play className="w-4 h-4" />
+                  </button>
+                )}
+                {/* Restart button */}
+                {task.status === 'error' && (
+                  <button
+                    onClick={() => restartTask(task.task_id)}
+                    className="p-2 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors"
+                    title="Повторить загрузку"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                  </button>
+                )}
+                {/* Download file button */}
                 {task.status === 'completed' && task.filename && (
                   <button
                     onClick={() => downloadFile(task.task_id, task.filename!)}
@@ -155,13 +225,7 @@ export default function DownloadList() {
             {/* Progress bar */}
             <div className="w-full bg-slate-700/50 rounded-full h-2">
               <div
-                className={`h-2 rounded-full transition-all duration-500 ${
-                  task.status === 'error'
-                    ? 'bg-red-500'
-                    : task.status === 'completed'
-                    ? 'bg-emerald-500'
-                    : 'bg-gradient-to-r from-cyan-500 to-blue-500'
-                }`}
+                className={`h-2 rounded-full transition-all duration-500 ${progressColor(task.status)}`}
                 style={{ width: `${Math.min(task.progress, 100)}%` }}
               />
             </div>
