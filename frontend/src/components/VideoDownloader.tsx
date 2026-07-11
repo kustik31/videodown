@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, Download, Loader2, Check, AlertCircle, Film, Music, Video } from 'lucide-react';
+import { Link, Download, Loader2, AlertCircle, Film, Music, Video, Globe } from 'lucide-react';
 
 interface VideoFormat {
   format_id: string;
@@ -31,6 +31,8 @@ export default function VideoDownloader() {
   const [taskId, setTaskId] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [quality, setQuality] = useState('best');
+  const [proxy, setProxy] = useState('');
+  const [showProxy, setShowProxy] = useState(false);
 
   const fetchInfo = async () => {
     if (!url.trim()) return;
@@ -41,7 +43,7 @@ export default function VideoDownloader() {
       const res = await fetch(`${API_BASE}/info`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url, proxy: proxy || undefined }),
       });
       if (!res.ok) {
         const err = await res.json();
@@ -69,7 +71,7 @@ export default function VideoDownloader() {
       const res = await fetch(`${API_BASE}/download`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, format_id: selectedFormat, quality }),
+        body: JSON.stringify({ url, format_id: selectedFormat, quality, proxy: proxy || undefined }),
       });
       if (!res.ok) {
         const err = await res.json();
@@ -127,6 +129,35 @@ export default function VideoDownloader() {
             {loading ? 'Анализ...' : 'Анализировать'}
           </button>
         </div>
+
+        <div className="mt-3 flex items-center justify-between">
+          <button
+            onClick={() => setShowProxy(!showProxy)}
+            className="text-xs text-slate-400 hover:text-cyan-400 flex items-center gap-1 transition-colors"
+          >
+            <Globe className="w-3 h-3" />
+            {showProxy ? 'Скрыть настройки прокси' : 'Настройки прокси'}
+          </button>
+          <span className="text-xs text-slate-500">
+            {proxy ? `Прокси: ${proxy}` : 'Без прокси'}
+          </span>
+        </div>
+
+        {showProxy && (
+          <div className="mt-2">
+            <input
+              type="text"
+              value={proxy}
+              onChange={(e) => setProxy(e.target.value)}
+              placeholder="http://user:pass@host:port  или  socks5://host:port"
+              className="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 transition-all placeholder:text-slate-600"
+            />
+            <p className="mt-1 text-xs text-slate-500">
+              Форматы: http://host:port, https://user:pass@host:port, socks5://host:port
+            </p>
+          </div>
+        )}
+
         {error && (
           <div className="mt-3 flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
             <AlertCircle className="w-4 h-4" />
