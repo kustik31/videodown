@@ -5,6 +5,7 @@ interface VideoFormat {
   format_id: string;
   ext: string;
   resolution: string | null;
+  fps: number | null;
   filesize: number | null;
   vcodec: string | null;
   acodec: string | null;
@@ -31,6 +32,7 @@ export default function VideoDownloader() {
   const [taskId, setTaskId] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [quality, setQuality] = useState('best');
+
   const [proxy, setProxy] = useState('');
   const [showProxy, setShowProxy] = useState(false);
 
@@ -129,7 +131,6 @@ export default function VideoDownloader() {
             {loading ? 'Анализ...' : 'Анализировать'}
           </button>
         </div>
-
         <div className="mt-3 flex items-center justify-between">
           <button
             onClick={() => setShowProxy(!showProxy)}
@@ -213,7 +214,9 @@ export default function VideoDownloader() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-sm">
-                          {f.resolution || 'Audio only'} • {f.ext}
+                          {f.resolution || 'Audio only'}
+                          {f.fps ? ` • ${f.fps}fps` : ''}
+                          {' • '}{f.ext}
                         </span>
                         <span className="text-slate-400 text-xs">{formatSize(f.filesize)}</span>
                       </div>
