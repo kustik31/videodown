@@ -39,6 +39,7 @@ class VideoFormat(BaseModel):
     format_id: str
     ext: str
     resolution: Optional[str] = None
+    fps: Optional[float] = None
     filesize: Optional[int] = None
     vcodec: Optional[str] = None
     acodec: Optional[str] = None
@@ -70,6 +71,7 @@ def get_video_info(request: VideoInfoRequest):
                 format_id=f.get("format_id", ""),
                 ext=f.get("ext", ""),
                 resolution=f.get("resolution"),
+                fps=f.get("fps"),
                 filesize=f.get("filesize"),
                 vcodec=f.get("vcodec"),
                 acodec=f.get("acodec"),
