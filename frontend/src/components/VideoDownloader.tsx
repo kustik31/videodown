@@ -9,6 +9,7 @@ interface VideoFormat {
   filesize: number | null;
   vcodec: string | null;
   acodec: string | null;
+  has_audio: boolean;
 }
 
 interface VideoInfo {
@@ -32,7 +33,6 @@ export default function VideoDownloader() {
   const [taskId, setTaskId] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [quality, setQuality] = useState('best');
-
   const [proxy, setProxy] = useState('');
   const [showProxy, setShowProxy] = useState(false);
 
@@ -53,9 +53,8 @@ export default function VideoDownloader() {
       }
       const data = await res.json();
       setInfo(data);
-      // Default to best video+audio or first available
-      const best = data.formats.find((f: VideoFormat) => 
-        f.vcodec && f.vcodec !== 'none' && f.acodec && f.acodec !== 'none'
+      const best = data.formats.find((f: VideoFormat) =>
+        f.vcodec && f.vcodec !== 'none' && f.has_audio
       );
       setSelectedFormat(best?.format_id || data.formats[0]?.format_id || '');
     } catch (e: any) {
@@ -67,13 +66,20 @@ export default function VideoDownloader() {
 
   const startDownload = async () => {
     if (!info || !selectedFormat) return;
+    const selected = info.formats.find((f) => f.format_id === selectedFormat);
     setDownloading(true);
     setError('');
     try {
       const res = await fetch(`${API_BASE}/download`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, format_id: selectedFormat, quality, proxy: proxy || undefined }),
+        body: JSON.stringify({
+          url,
+          format_id: selectedFormat,
+          has_audio: selected?.has_audio ?? true,
+          quality,
+          proxy: proxy || undefined
+        }),
       });
       if (!res.ok) {
         const err = await res.json();
@@ -220,9 +226,17 @@ export default function VideoDownloader() {
                         </span>
                         <span className="text-slate-400 text-xs">{formatSize(f.filesize)}</span>
                       </div>
-                      <div className="text-slate-500 text-xs mt-0.5">
-                        {f.vcodec && f.vcodec !== 'none' ? `Video: ${f.vcodec}` : ''}
-                        {f.acodec && f.acodec !== 'none' ? ` • Audio: ${f.acodec}` : ''}
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className={`text-xs px-1.5 py-0.5 rounded ${
+                          f.has_audio
+                            ? 'bg-emerald-500/10 text-emerald-400'
+                            : 'bg-amber-500/10 text-amber-400'
+                        }`}>
+                          {f.has_audio ? '🔊 со звуком' : '🔇 видео без звука'}
+                        </span>
+                        <span className="text-slate-500 text-xs">
+                          {f.vcodec && f.vcodec !== 'none' ? f.vcodec : ''}
+                        </span>
                       </div>
                     </div>
                   </label>
