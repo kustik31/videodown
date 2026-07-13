@@ -214,6 +214,8 @@ class DownloadService:
             "progress_hooks": [self._progress_hook(task)],
             "quiet": True,
             "no_warnings": True,
+            # ---- FFmpeg location (bundled) ----
+            "ffmpeg_location": os.path.join(os.path.dirname(os.path.abspath(__file__)), "ffmpeg", "ffmpeg.exe"),
             # ---- Retry & Resume settings ----
             "retries": 10,
             "fragment_retries": 10,
