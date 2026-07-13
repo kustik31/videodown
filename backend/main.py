@@ -31,6 +31,7 @@ class VideoInfoRequest(BaseModel):
 class DownloadRequest(BaseModel):
     url: str
     format_id: Optional[str] = None
+    has_audio: bool = True
     quality: Optional[str] = "best"
     filename: Optional[str] = None
     proxy: Optional[str] = None
@@ -43,6 +44,7 @@ class VideoFormat(BaseModel):
     filesize: Optional[int] = None
     vcodec: Optional[str] = None
     acodec: Optional[str] = None
+    has_audio: bool = True
 
 class VideoInfoResponse(BaseModel):
     title: str
@@ -75,6 +77,7 @@ def get_video_info(request: VideoInfoRequest):
                 filesize=f.get("filesize"),
                 vcodec=f.get("vcodec"),
                 acodec=f.get("acodec"),
+                has_audio=f.get("acodec") not in (None, "none"),
             ))
         return VideoInfoResponse(
             title=info.get("title", "Unknown"),
@@ -96,6 +99,7 @@ def start_download(request: DownloadRequest):
             task_id=task_id,
             url=request.url,
             format_id=request.format_id,
+            has_audio=request.has_audio,
             quality=request.quality,
             filename=request.filename,
             proxy=request.proxy,
