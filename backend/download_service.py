@@ -23,6 +23,7 @@ class DownloadTask:
     retry_count: int = 0
     max_retries: int = 3
     proxy: Optional[str] = None
+    has_audio: bool = True
     
     # Threading controls (not serialized)
     _pause_event: threading.Event = field(default_factory=threading.Event, repr=False, compare=False)
@@ -55,6 +56,7 @@ class DownloadTask:
             "retry_count": self.retry_count,
             "max_retries": self.max_retries,
             "proxy": self.proxy,
+            "has_audio": self.has_audio,
         }
 
 class DownloadService:
@@ -79,13 +81,14 @@ class DownloadService:
     
     def create_task(self, task_id: str, url: str, format_id: Optional[str] = None, 
                     quality: str = "best", filename: Optional[str] = None,
-                    proxy: Optional[str] = None) -> DownloadTask:
+                    proxy: Optional[str] = None, has_audio: bool = True) -> DownloadTask:
         task = DownloadTask(
             task_id=task_id,
             url=url,
             format_id=format_id,
             quality=quality,
             proxy=proxy,
+            has_audio=has_audio,
         )
         with self._lock:
             self.tasks[task_id] = task
@@ -217,7 +220,13 @@ class DownloadService:
         }
         
         if task.format_id:
-            opts["format"] = task.format_id
+            # If format has no audio, automatically merge with best audio
+            if not task.has_audio:
+                opts["format"] = f"{task.format_id}+bestaudio/best"
+                opts["merge_output_format"] = "mp4"
+                opts["postprocessors"] = [{"key": "FFmpegMerger", "preferedformat": "mp4"}]
+            else:
+                opts["format"] = task.format_id
         else:
             opts["format"] = task.quality
         
